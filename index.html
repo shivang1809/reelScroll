@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Reel Viewer</title>
+
+<style>
+body{
+margin:0;
+background:black;
+display:flex;
+align-items:center;
+justify-content:center;
+height:100vh;
+}
+
+video{
+height:90vh;
+border-radius:12px;
+}
+</style>
+</head>
+
+<body>
+
+<video id="reel" controls autoplay loop></video>
+
+<script>
+
+async function load(){
+
+const res = await fetch("/api/reel");
+const data = await res.json();
+
+if(data.video){
+document.getElementById("reel").src = data.video;
+}else{
+document.body.innerHTML="<h2 style='color:white'>Video failed to load</h2>";
+}
+
+}
+
+load();
+
+</script>
+
+</body>
+</html>
