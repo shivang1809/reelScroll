@@ -2,45 +2,125 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Reel Viewer</title>
+<title>Reel Feed</title>
 
 <style>
+
 body{
 margin:0;
 background:black;
-display:flex;
-align-items:center;
-justify-content:center;
+font-family:Arial;
+}
+
+.feed{
 height:100vh;
+overflow-y:scroll;
+scroll-snap-type:y mandatory;
+}
+
+.reel{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+scroll-snap-align:start;
 }
 
 video{
 height:90vh;
-border-radius:12px;
+border-radius:10px;
 }
+
 </style>
 </head>
 
 <body>
 
-<video id="reel" controls autoplay loop></video>
+<div class="feed" id="feed"></div>
 
 <script>
 
-async function load(){
+const accounts=[
+"https://www.instagram.com/reels/",
+"https://www.instagram.com/explore/reels/"
+]
 
-const res = await fetch("/api/reel");
-const data = await res.json();
+async function scrapeReels(){
 
-if(data.video){
-document.getElementById("reel").src = data.video;
-}else{
-document.body.innerHTML="<h2 style='color:white'>Video failed to load</h2>";
+let links=[];
+
+for(const page of accounts){
+
+const proxy=
+"https://api.allorigins.win/raw?url="+
+encodeURIComponent(page);
+
+const html=await fetch(proxy).then(r=>r.text());
+
+const matches=[...html.matchAll(/\/reel\/[A-Za-z0-9_-]+/g)];
+
+matches.forEach(m=>{
+links.push("https://www.instagram.com"+m[0]+"/");
+});
+
+}
+
+return [...new Set(links)];
+
+}
+
+async function extractVideo(reel){
+
+try{
+
+const api=
+"https://api.allorigins.win/raw?url="+
+encodeURIComponent(
+"https://igram.world/api/convert?url="+reel
+);
+
+const data=await fetch(api).then(r=>r.json());
+
+for(const m of data.medias){
+if(m.type==="video") return m.url;
+}
+
+}catch(e){}
+
+return null;
+
+}
+
+async function buildFeed(){
+
+const reels=await scrapeReels();
+
+const feed=document.getElementById("feed");
+
+for(const reel of reels.slice(0,10)){
+
+const videoUrl=await extractVideo(reel);
+
+if(!videoUrl) continue;
+
+const div=document.createElement("div");
+div.className="reel";
+
+const video=document.createElement("video");
+
+video.src=videoUrl;
+video.autoplay=true;
+video.loop=true;
+video.controls=true;
+
+div.appendChild(video);
+feed.appendChild(div);
+
 }
 
 }
 
-load();
+buildFeed();
 
 </script>
 
